@@ -114,16 +114,54 @@ const unsigned char o[] =
 
 int turn=0,rowx=0,rowo=0,colx=0,colo=0,row1x=-1,row1o=-1,col1x=-1,col1o=-1 ;
 void PortF_Init(void);
-//array two dimension which we put (X,o) player
 char location[3][3]= {{'h','h','h'},
     {'h','h','h'},
     {'h','h','h'}
-};
+};//array two diension which we put (X,o) player
 char win;
-
+void loc(int row1,int col1,char z) //ARRAY TWO DIMENSION we put when player x plays when we put its (X,O) Iin his ppositiion that he choose it
+{
+    if(row1==0&&col1==16)
+    {
+        location[0][0]=z;// this function know me that user choose X or O IN THIS POSITION
+    }
+    if(row1==0&&col1==32)
+    {
+        location[1][0]=z;
+    }
+    if(row1==0&&col1==48)
+    {
+        location[2][0]=z;
+    }
+    if(row1==19&&col1==16)
+    {
+        location[0][1]=z;
+    }
+    if(row1==19&&col1==32)
+    {
+        location[1][1]=z;
+    }
+    if(row1==19&&col1==48)
+    {
+        location[2][1]=z;
+    }
+    if(row1==38&&col1==16)
+    {
+        location[0][2]=z;
+    }
+    if(row1==38&&col1==32)
+    {
+        location[1][2]=z;
+    }
+    if(row1==38&&col1==48)
+    {
+        location[2][2]=z;
+    }
+}
 /*****************************************/
+
 int cordXO[2]= {-1}; //to take coordaintae of x,o with wo put it in the array
-int i=0,j=0;
+
 int main(void)
 {
     TExaS_Init(SSI0_Real_Nokia5110_Scope);  // set system clock to 80 MHz
@@ -134,7 +172,7 @@ int main(void)
     EnableInterrupts();
     Nokia5110_ClearBuffer();
     Nokia5110_DisplayBuffer();      // draw buffer
-    Nokia5110_PrintBMP(0,48, BG, 0);  
+    Nokia5110_PrintBMP(0,48, BG, 0);  // player ship middle bottom
     Nokia5110_DisplayBuffer();
     Timer2_Init(10000000);	// draw buffer
 
@@ -160,11 +198,17 @@ void PortF_Init(void)
 }
 
 
-
+void Timer2A_Handler(void)
+{
+    TIMER2_ICR_R = 0x00000001;   // acknowledge timer2A timeout
+    TimerCount++;
+    Semaphore = 1; // trigger
+	
     while(1)
     {
-       
-       
+        
+     
+        /*********************************************************/
         rowx=0,rowo=0,colx=16,colo=16,row1x=-1,row1o=-1,col1x=-1,col1o=-1 ;
 
         while (turn==0)
@@ -174,7 +218,8 @@ void PortF_Init(void)
             Nokia5110_OutString("Turn");
             Nokia5110_SetCursor(9,3 );
             Nokia5110_OutString(" X");
-           
+            ISPORTE_ISPRESSED();
+            ISPORTE_ISPRESSED();
             if (GPIO_PORTE_RIS_R & (1 << 0))
             {
                 while(rowx <=39)
@@ -188,8 +233,8 @@ void PortF_Init(void)
                         row1x=0;
                         col1x=16;
                     }
-                    Nokia5110_PrintBMP(0,48, BG, 0);  
-                    Nokia5110_PrintBMP(rowx,col1x, x, 0);  
+                    Nokia5110_PrintBMP(0,48, BG, 0);  // player ship middle bottom
+                    Nokia5110_PrintBMP(rowx,col1x, x, 0);  // player ship middle bottom row=0,col=16
                     row1x= rowx;
                     Nokia5110_DisplayBuffer();
                     Nokia5110_ClearBuffer();
@@ -199,9 +244,9 @@ void PortF_Init(void)
                 rowx= rowx+19;
                 if(rowx > 39)
                     rowx=0;
-                GPIO_PORTE_ICR_R = 0x01;      // acknowledge flag4  
+                GPIO_PORTE_ICR_R = 0x01;      // acknowledge flag4  }
             }
-          
+      
             if (GPIO_PORTE_RIS_R & (1 << 4))
             {
                 while(colx <= 48)
@@ -214,8 +259,8 @@ void PortF_Init(void)
                     {
                         row1x=0;
                     }
-                    Nokia5110_PrintBMP(0,48, BG, 0);  
-                    Nokia5110_PrintBMP(row1x,col1x, x, 0);  
+                    Nokia5110_PrintBMP(0,48, BG, 0);  // player ship middle bottom
+                    Nokia5110_PrintBMP(row1x,col1x, x, 0);  // player ship middle bottom
                     col1x= colx;
                     Nokia5110_DisplayBuffer();
                     Nokia5110_ClearBuffer();
@@ -225,7 +270,22 @@ void PortF_Init(void)
                 colx= colx+16;
                 if(colx >49 )
                     colx=16;
-                GPIO_PORTE_ICR_R = 0x10;      // acknowledge flag4 
+                GPIO_PORTE_ICR_R = 0x10;      // acknowledge flag4  }
             }
-          }}
-           
+         
+            if (GPIO_PORTE_RIS_R & (1 << 2))
+            {
+                loc(row1x,col1x,'x');
+                printxo( cordXO);
+                if(turn==0)
+                {
+                    turn=1;
+                }
+                else
+                {
+                    turn=0;
+                }
+                GPIO_PORTE_ICR_R = 0x04;      // acknowledge flag4  }
+            }
+        }
+			}}
