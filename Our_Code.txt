@@ -20,7 +20,6 @@ void PortE_Init(void);
 void DisableInterrupts(void); // Disable interrupts
 void EnableInterrupts(void);  // Enable interrupts
 void Timer2_Init(unsigned long period);
-void Delay100ms(unsigned long count); // time delay in 0.1 seconds
 void Timer2A_Handler(void);
 unsigned long TimerCount;
 unsigned long Semaphore;
@@ -111,13 +110,12 @@ const unsigned char o[] =
 #define OW      ((unsigned char)o[18])
 #define OH      ((unsigned char)o[22])
 
-
 int turn=0,rowx=0,rowo=0,colx=0,colo=0,row1x=-1,row1o=-1,col1x=-1,col1o=-1 ;
 void PortF_Init(void);
 char location[3][3]= {{'h','h','h'},
     {'h','h','h'},
     {'h','h','h'}
-};//array two diension which we put (X,o) player
+};//array two dimension which we put (X,o) player
 char win;
 void loc(int row1,int col1,char z) //ARRAY TWO DIMENSION we put when player x plays when we put its (X,O) Iin his ppositiion that he choose it
 {
@@ -159,9 +157,8 @@ void loc(int row1,int col1,char z) //ARRAY TWO DIMENSION we put when player x pl
     }
 }
 /*****************************************/
-
 int cordXO[2]= {-1}; //to take coordaintae of x,o with wo put it in the array
-
+int i=0,j=0;
 int main(void)
 {
     TExaS_Init(SSI0_Real_Nokia5110_Scope);  // set system clock to 80 MHz
@@ -197,7 +194,27 @@ void PortF_Init(void)
     GPIO_PORTF_DEN_R = 0x1F;          // 7) enable digital pins PF4-PF0
 }
 
-
+// You can use this timer only if you learn how it works
+void Timer2_Init(unsigned long period)
+{
+    unsigned long volatile delay;
+    SYSCTL_RCGCTIMER_R |= 0x04;   // 0) activate timer2
+    delay = SYSCTL_RCGCTIMER_R;
+    TimerCount = 0;
+    Semaphore = 0;
+    TIMER2_CTL_R = 0x00000000;    // 1) disable timer2A during setup
+    TIMER2_CFG_R = 0x00000000;    // 2) configure for 32-bit mode
+    TIMER2_TAMR_R = 0x00000002;   // 3) configure for periodic mode, default down-count settings
+    TIMER2_TAILR_R = period-1;    // 4) reload value
+    TIMER2_TAPR_R = 0;            // 5) bus clock resolution
+    TIMER2_ICR_R = 0x00000001;    // 6) clear timer2A timeout flag
+    TIMER2_IMR_R = 0x00000001;    // 7) arm timeout interrupt
+    NVIC_PRI5_R = (NVIC_PRI5_R&0x00FFFFFF)|0x80000000; // 8) priority 4
+// interrupts enabled in the main program after all devices initialized
+// vector number 39, interrupt number 23
+    NVIC_EN0_R = 1<<23;           // 9) enable IRQ 23 in NVIC
+    TIMER2_CTL_R = 0x00000001;    // 10) enable timer2A
+}
 void Timer2A_Handler(void)
 {
     TIMER2_ICR_R = 0x00000001;   // acknowledge timer2A timeout
@@ -206,8 +223,6 @@ void Timer2A_Handler(void)
 	
     while(1)
     {
-        
-     
         /*********************************************************/
         rowx=0,rowo=0,colx=16,colo=16,row1x=-1,row1o=-1,col1x=-1,col1o=-1 ;
 
@@ -218,8 +233,6 @@ void Timer2A_Handler(void)
             Nokia5110_OutString("Turn");
             Nokia5110_SetCursor(9,3 );
             Nokia5110_OutString(" X");
-            ISPORTE_ISPRESSED();
-            ISPORTE_ISPRESSED();
             if (GPIO_PORTE_RIS_R & (1 << 0))
             {
                 while(rowx <=39)
@@ -246,7 +259,6 @@ void Timer2A_Handler(void)
                     rowx=0;
                 GPIO_PORTE_ICR_R = 0x01;      // acknowledge flag4  }
             }
-      
             if (GPIO_PORTE_RIS_R & (1 << 4))
             {
                 while(colx <= 48)
@@ -272,7 +284,6 @@ void Timer2A_Handler(void)
                     colx=16;
                 GPIO_PORTE_ICR_R = 0x10;      // acknowledge flag4  }
             }
-         
             if (GPIO_PORTE_RIS_R & (1 << 2))
             {
                 loc(row1x,col1x,'x');
@@ -288,4 +299,84 @@ void Timer2A_Handler(void)
                 GPIO_PORTE_ICR_R = 0x04;      // acknowledge flag4  }
             }
         }
-			}}
+       
+        rowx=0,rowo=0,colx=16,colo=16,row1x=-1,row1o=-1,col1x=-1,col1o=-1 ;
+
+        /************************************************/
+        while(turn==1)
+        {
+            TurnO();
+            Nokia5110_SetCursor(8,1 );
+            Nokia5110_OutString("Turn");
+            Nokia5110_SetCursor(9,3 );
+            Nokia5110_OutString(" O");
+            if (GPIO_PORTE_RIS_R & (1 << 0))
+            {
+                while(rowo <=39)
+                {
+                    if((col1o==16 || col1o==32 || col1o==48)&& row1o==0 )
+                    {
+                        rowo=19;
+                    }
+                    if (col1o==-1)
+                    {
+                        row1o=0;
+                        col1o=16;
+                    }
+                    Nokia5110_PrintBMP(0,48, BG, 0);
+                    Nokia5110_PrintBMP(rowo,col1o, o, 0);
+                    row1o= rowo;
+                    Nokia5110_DisplayBuffer();
+                    Nokia5110_ClearBuffer();
+                    printxo(cordXO);
+                    break;
+                }
+                rowo= rowo+19;
+                if(rowo > 39)
+                    rowo=0;
+                GPIO_PORTE_ICR_R = 0x01;
+            }
+            if (GPIO_PORTE_RIS_R & (1 << 4))
+            {
+                while(colo <= 48)
+                {
+                    if((row1o==0 || row1o==19 || row1o==38)&& col1o==16 )
+                    {
+                        colo=32;
+                    }
+                    else if (row1o==-1)
+                    {
+                        row1o=0;
+                    }
+                    Nokia5110_PrintBMP(0,48, BG, 0);
+                    Nokia5110_PrintBMP(row1o,col1o, o, 0);
+                    col1o= colo;
+                    Nokia5110_DisplayBuffer();
+                    Nokia5110_ClearBuffer();
+                    printxo( cordXO);
+                    break;
+                }
+                colo= colo+16;
+                if(colo >49 )
+                    colo=16;
+                GPIO_PORTE_ICR_R = 0x10;
+            }
+            if (GPIO_PORTE_RIS_R & (1 << 2))
+            {
+                loc(row1o,col1o,'o');
+                printxo( cordXO);
+                if(turn==0) //x
+                {
+                    turn=1;
+                }
+                else
+                {
+                    turn=0;
+                }
+                GPIO_PORTE_ICR_R = 0x04;
+            }
+        }
+        
+    }
+
+}
