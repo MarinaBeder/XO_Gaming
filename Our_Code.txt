@@ -206,6 +206,31 @@ void cordNokia(int i,int j,int cordXO[]) //to get column and row from array loac
         cordXO[1]=48;
     }
 }
+void printxo(int cordXO [])
+{
+    int i=0,j=0;
+    Nokia5110_PrintBMP(0,48, BG, 0);
+    Nokia5110_PrintBMP(row1o,col1o, o, 0);
+    Nokia5110_PrintBMP(row1x,col1x, x, 0);
+    Nokia5110_DisplayBuffer();
+    for(i=0; i<3; i++) //for loop for 9 squares in two diemension location locations
+    {
+        for(j=0; j<3; j++)
+        {
+            cordNokia(i,j,cordXO);//TO KNOW PLACES OF XO GAME TO PRINT IT INN NOKIA//0,16
+            if(location[i][j]=='x') //locations two diemnsion array
+            {
+                Nokia5110_PrintBMP(cordXO[0],cordXO[1], x, 0);
+                Nokia5110_DisplayBuffer();
+            }
+            if(location[i][j]=='o')
+            {
+                Nokia5110_PrintBMP(cordXO[0],cordXO[1], o, 0);
+                Nokia5110_DisplayBuffer();
+            }
+        }
+    }
+}
 char winner(char z)
 {
     int i=0, j=0;
