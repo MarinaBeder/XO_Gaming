@@ -20,7 +20,6 @@ void PortE_Init(void);
 void DisableInterrupts(void); // Disable interrupts
 void EnableInterrupts(void);  // Enable interrupts
 void Timer2_Init(unsigned long period);
-void Delay100ms(unsigned long count); // time delay in 0.1 seconds
 void Timer2A_Handler(void);
 unsigned long TimerCount;
 unsigned long Semaphore;
@@ -77,7 +76,6 @@ const unsigned char BG[] =
 
 };
 
-
 const unsigned char x[] =
 {
     0x42, 0x4D, 0xE6, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x76, 0x00, 0x00, 0x00, 0x28, 0x00, 0x00, 0x00, 0x10, 0x00, 0x00, 0x00, 0x0E, 0x00, 0x00, 0x00, 0x01, 0x00, 0x04, 0x00, 0x00, 0x00,
@@ -90,6 +88,7 @@ const unsigned char x[] =
     0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0xFF,
 
 };
+
 const unsigned char o[] =
 {
     0x42, 0x4D, 0xE6, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x76, 0x00, 0x00, 0x00, 0x28, 0x00, 0x00, 0x00, 0x10, 0x00, 0x00, 0x00, 0x0E, 0x00, 0x00, 0x00, 0x01, 0x00, 0x04, 0x00, 0x00, 0x00,
@@ -296,8 +295,8 @@ int main(void)
     Nokia5110_ClearBuffer();
     Nokia5110_DisplayBuffer();      // draw buffer
     Nokia5110_PrintBMP(0,48, BG, 0);  // player ship middle bottom
-Nokia5110_DisplayBuffer();
-    Timer2_Init(10000000);  // draw buffer
+    Nokia5110_DisplayBuffer();
+    Timer2_Init(10000000);	// draw buffer
 
     while(1)
     {
@@ -346,14 +345,13 @@ void Timer2A_Handler(void)
     TIMER2_ICR_R = 0x00000001;   // acknowledge timer2A timeout
     TimerCount++;
     Semaphore = 1; // trigger
-  
+	
     while(1)
     {
-        i=0,j=0;
-        
         /*********************************************************/
         rowx=0,rowo=0,colx=16,colo=16,row1x=-1,row1o=-1,col1x=-1,col1o=-1 ;
-while (turn==0)
+
+        while (turn==0)
         {
             TurnX();
             Nokia5110_SetCursor(8,1 );
@@ -364,7 +362,7 @@ while (turn==0)
             {
                 while(rowx <=39)
                 {
-                    if((col1x==16  col1x==32  col1x==48)&& row1x==0 )
+                    if((col1x==16 || col1x==32 || col1x==48)&& row1x==0 )
                     {
                         rowx=19;
                     }
@@ -386,12 +384,11 @@ while (turn==0)
                     rowx=0;
                 GPIO_PORTE_ICR_R = 0x01;      // acknowledge flag4  }
             }
-          
             if (GPIO_PORTE_RIS_R & (1 << 4))
             {
                 while(colx <= 48)
                 {
-                    if((row1x==0  row1x==19  row1x==38)&& col1x==16 )
+                    if((row1x==0 || row1x==19 || row1x==38)&& col1x==16 )
                     {
                         colx=32;
                     }
@@ -412,7 +409,6 @@ while (turn==0)
                     colx=16;
                 GPIO_PORTE_ICR_R = 0x10;      // acknowledge flag4  }
             }
-           
             if (GPIO_PORTE_RIS_R & (1 << 2))
             {
                 loc(row1x,col1x,'x');
@@ -428,9 +424,26 @@ while (turn==0)
                 GPIO_PORTE_ICR_R = 0x04;      // acknowledge flag4  }
             }
         }
-       
+        win=winner('x');
+        if(win=='x')
+        {
+					  turn=2;
+            Nokia5110_ClearBuffer();
+            Nokia5110_PrintBMP(28,40, x, 0);  // player ship middle bottom
+            Nokia5110_DisplayBuffer();
+            Nokia5110_SetCursor(1,1 );
+            Nokia5110_OutString("Winner is ");
+        }
+        if(win=='E')
+        {
+					  turn=2;
+            Nokia5110_Clear();
+            Nokia5110_SetCursor(2,2 );
+            Nokia5110_OutString("Try Again");
+        }
         rowx=0,rowo=0,colx=16,colo=16,row1x=-1,row1o=-1,col1x=-1,col1o=-1 ;
-/************************************************/
+
+        /************************************************/
         while(turn==1)
         {
             TurnO();
@@ -438,12 +451,11 @@ while (turn==0)
             Nokia5110_OutString("Turn");
             Nokia5110_SetCursor(9,3 );
             Nokia5110_OutString(" O");
-           
             if (GPIO_PORTE_RIS_R & (1 << 0))
             {
                 while(rowo <=39)
                 {
-                    if((col1o==16  col1o==32  col1o==48)&& row1o==0 )
+                    if((col1o==16 || col1o==32 || col1o==48)&& row1o==0 )
                     {
                         rowo=19;
                     }
@@ -465,12 +477,11 @@ while (turn==0)
                     rowo=0;
                 GPIO_PORTE_ICR_R = 0x01;
             }
-           
             if (GPIO_PORTE_RIS_R & (1 << 4))
             {
                 while(colo <= 48)
                 {
-                    if((row1o==0  row1o==19  row1o==38)&& col1o==16 )
+                    if((row1o==0 || row1o==19 || row1o==38)&& col1o==16 )
                     {
                         colo=32;
                     }
@@ -491,25 +502,38 @@ while (turn==0)
                     colo=16;
                 GPIO_PORTE_ICR_R = 0x10;
             }
-            
             if (GPIO_PORTE_RIS_R & (1 << 2))
             {
                 loc(row1o,col1o,'o');
                 printxo( cordXO);
                 if(turn==0) //x
                 {
-                   
                     turn=1;
                 }
                 else
                 {
-                   
                     turn=0;
                 }
                 GPIO_PORTE_ICR_R = 0x04;
             }
         }
-        
+        win=winner('o');
+        if(win=='o')
+        {
+					  turn=2;
+            Nokia5110_ClearBuffer();
+            Nokia5110_PrintBMP(28,40, o, 0);
+            Nokia5110_DisplayBuffer();
+            Nokia5110_SetCursor(1,1 );
+            Nokia5110_OutString("Winner is ");
+        }
+        if(win=='E')
+        {
+					  turn=2;
+            Nokia5110_Clear();
+            Nokia5110_SetCursor(2,2 );
+            Nokia5110_OutString("Try Again");
+        }
     }
 
 }
